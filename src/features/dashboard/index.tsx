@@ -1,218 +1,231 @@
-import { Button } from '@/components/ui/button'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { ConfigDrawer } from '@/components/config-drawer'
+import { ChartAreaInteractive } from '@/components/chart-area-interactive'
+import { DashboardCardHeader } from '@/components/dashboard/dashboard-card-header'
+import { DashboardSection } from '@/components/dashboard/dashboard-section'
+import { LazyMount } from '@/components/dashboard/lazy-mount'
+import { SiteHeader } from '@/components/dashboard/site-header'
 import { Header } from '@/components/layout/header'
 import { Main } from '@/components/layout/main'
-import { TopNav } from '@/components/layout/top-nav'
 import { ProfileDropdown } from '@/components/profile-dropdown'
 import { Search } from '@/components/search'
+import { SectionCards } from '@/components/section-cards'
 import { ThemeSwitch } from '@/components/theme-switch'
-import { Analytics } from './components/analytics'
-import { Overview } from './components/overview'
-import { RecentSales } from './components/recent-sales'
+import { Card, CardContent } from '@/components/ui/card'
+import { AccountsBdmDataTable } from '@/features/atfx/components/accounts-bdm-data-table'
+import { AccountsByCountryChart } from '@/features/atfx/components/accounts-by-country-chart'
+import { AtfxConfigAlert } from '@/features/atfx/components/atfx-config-alert'
+import { DashboardLoadingBanner } from '@/features/atfx/components/dashboard-loading-banner'
+import { LeadsByCountryMap } from '@/features/atfx/charts/leads-by-country-map'
+import { CopyConnectionPrompt } from '@/features/atfx/components/copy-connection-prompt'
+import { RefreshButton } from '@/features/atfx/components/refresh-button'
+import { BdmHorizontalBarChart } from '@/features/atfx/charts/bdm-horizontal-bar-chart'
+import { AccountSourceBreakdown } from '@/features/atfx/charts/account-source-breakdown'
+import { BdmLeaderboard } from '@/features/atfx/charts/bdm-leaderboard'
+import { HotLeadsList } from '@/features/atfx/charts/hot-leads-list'
+import { SchemaExplorer } from '@/features/atfx/charts/schema-explorer'
+import { StatusFunnelDonutChart } from '@/features/atfx/charts/status-funnel-donut-chart'
+import { UnusedDemosByBdm } from '@/features/atfx/charts/unused-demos-by-bdm'
+import {
+  DashboardToolbar,
+  useDashboardFilters,
+} from '@/features/atfx/dashboard-filters'
+
+// Fluid side padding — scales with viewport, smaller on mobile
+const DASHBOARD_PAD = 'w-full px-[clamp(0.75rem,3.5vw,3rem)]'
 
 export function Dashboard() {
+  const { days, period } = useDashboardFilters()
+
   return (
     <>
-      {/* ===== Top Heading ===== */}
       <Header>
-        <TopNav links={topNav} className='me-auto' />
-        <Search />
+        <Search className='me-auto' />
         <ThemeSwitch />
-        <ConfigDrawer />
         <ProfileDropdown />
       </Header>
 
-      {/* ===== Main ===== */}
-      <Main>
-        <div className='mb-2 flex items-center justify-between space-y-2'>
-          <h1 className='text-2xl font-bold tracking-tight'>Dashboard</h1>
-          <div className='flex items-center space-x-2'>
-            <Button>Download</Button>
+      <Main fluid className='px-0'>
+        <div className='@container/main mx-auto flex w-full max-w-none flex-col gap-6 py-6 lg:max-w-[85%]'>
+          <div className={DASHBOARD_PAD}>
+            <SiteHeader
+              section='Overview'
+              actions={
+                <>
+                  <RefreshButton />
+                  <CopyConnectionPrompt />
+                </>
+              }
+            />
+            <AtfxConfigAlert className='mt-4' />
+            <DashboardLoadingBanner />
+          </div>
+
+          <div className={DASHBOARD_PAD}>
+            <DashboardToolbar />
+          </div>
+
+          <div className={`${DASHBOARD_PAD} osmo-stagger flex flex-col gap-8`}>
+            {/* Headline KPIs stay pinned — the one thing always in view */}
+            <SectionCards />
+
+            <DashboardSection
+              title='Geography'
+              description='Where leads come from'
+            >
+              <Card>
+                <DashboardCardHeader
+                  title='Leads by country'
+                  description={`Geographic distribution · last ${days} days`}
+                  tooltip='Lead volume by ISO country (Country_of_Residence_Lead__c), shaded by intensity. Hover a country for its lead count.'
+                />
+                <CardContent className='pb-4'>
+                  <LazyMount height={360}>
+                    <LeadsByCountryMap />
+                  </LazyMount>
+                </CardContent>
+              </Card>
+            </DashboardSection>
+
+            <DashboardSection
+              title='Lead pipeline'
+              description='Trend, funnel, hot leads and where demos leak'
+            >
+              <ChartAreaInteractive />
+
+              <div className='grid grid-cols-1 gap-4 xl:grid-cols-12'>
+                <Card className='xl:col-span-7'>
+                  <DashboardCardHeader
+                    title='Pipeline by status'
+                    description={`Lead funnel · last ${days} days`}
+                    tooltip='Grouped lead counts by Salesforce Status picklist.'
+                  />
+                  <CardContent className='px-2 pb-4'>
+                    <LazyMount height={360}>
+                      <StatusFunnelDonutChart />
+                    </LazyMount>
+                  </CardContent>
+                </Card>
+
+                <Card className='xl:col-span-5'>
+                  <DashboardCardHeader
+                    title='Leads by BDM'
+                    description={period}
+                    tooltip='Leads created in the selected BDM period, ranked by Owner.'
+                  />
+                  <CardContent>
+                    <LazyMount height={320}>
+                      <BdmHorizontalBarChart period={period} />
+                    </LazyMount>
+                  </CardContent>
+                </Card>
+              </div>
+
+              <div className='grid grid-cols-1 gap-4 xl:grid-cols-12'>
+                <Card className='xl:col-span-5'>
+                  <DashboardCardHeader
+                    title='Hot leads'
+                    description='Interested to open an account · act first'
+                    tooltip='Leads at Status = "Interested to Open Account" — the highest-intent segment, with owner and country.'
+                  />
+                  <CardContent className='pb-2'>
+                    <LazyMount height={300}>
+                      <HotLeadsList />
+                    </LazyMount>
+                  </CardContent>
+                </Card>
+
+                <Card className='xl:col-span-7'>
+                  <DashboardCardHeader
+                    title='Unused demos by BDM'
+                    description='Leads stuck at "Not Used Demo"'
+                    tooltip='Where the demo-to-account funnel leaks: leads that requested a demo but never used it, grouped by owning BDM.'
+                  />
+                  <CardContent className='px-2 pb-4'>
+                    <LazyMount height={360}>
+                      <UnusedDemosByBdm limit={12} />
+                    </LazyMount>
+                  </CardContent>
+                </Card>
+              </div>
+            </DashboardSection>
+
+            <DashboardSection
+              title='BDM & account book'
+              description='Performance leaderboard and account distribution'
+            >
+              <Card>
+                <DashboardCardHeader
+                  title='BDM activity leaderboard'
+                  description='Accounts + leads per BDM · ranked by total footprint'
+                  tooltip='Cross-references each BDM&apos;s account book and lead book (both grouped by Owner, all-time). The split bar shows the accounts-vs-leads mix; lead owners and account owners are often different people.'
+                />
+                <CardContent className='pb-4'>
+                  <LazyMount height={420}>
+                    <BdmLeaderboard limit={12} />
+                  </LazyMount>
+                </CardContent>
+              </Card>
+
+              <div className='grid grid-cols-1 gap-4 xl:grid-cols-12'>
+                <Card className='xl:col-span-7'>
+                  <DashboardCardHeader
+                    title='Accounts by BDM'
+                    description='Sortable book · search · pagination'
+                    tooltip='All Account records grouped by Owner (BDM).'
+                  />
+                  <CardContent>
+                    <AccountsBdmDataTable />
+                  </CardContent>
+                </Card>
+
+                <Card className='xl:col-span-5'>
+                  <DashboardCardHeader
+                    title='Accounts by country'
+                    description='Top countries · click to filter leads'
+                    tooltip='Country on Account. Click a point to set lead country filter.'
+                  />
+                  <CardContent className='px-2 pb-4 pt-1'>
+                    <LazyMount height={320}>
+                      <AccountsByCountryChart limit={10} />
+                    </LazyMount>
+                  </CardContent>
+                </Card>
+              </div>
+
+              <Card>
+                <DashboardCardHeader
+                  title='Acquisition channel'
+                  description='How the account book was sourced'
+                  tooltip='Account book by Client Source — direct sign-ups vs accounts brought in through Introducing Brokers (IB).'
+                />
+                <CardContent className='pb-5'>
+                  <LazyMount height={140}>
+                    <AccountSourceBreakdown />
+                  </LazyMount>
+                </CardContent>
+              </Card>
+            </DashboardSection>
+
+            <DashboardSection
+              title='Developer tools'
+              description='Salesforce schema & field mapping'
+              defaultOpen={false}
+            >
+              <Card>
+                <DashboardCardHeader
+                  title='Schema explorer'
+                  description='Objects, fields, types and picklists exposed by the API'
+                  tooltip='Live /describe of each sObject — the available data dictionary. Reference for building new widgets and queries.'
+                />
+                <CardContent>
+                  <LazyMount height={320}>
+                    <SchemaExplorer />
+                  </LazyMount>
+                </CardContent>
+              </Card>
+            </DashboardSection>
           </div>
         </div>
-        <Tabs
-          orientation='vertical'
-          defaultValue='overview'
-          className='space-y-4'
-        >
-          <div className='w-full overflow-x-auto pb-2'>
-            <TabsList>
-              <TabsTrigger value='overview'>Overview</TabsTrigger>
-              <TabsTrigger value='analytics'>Analytics</TabsTrigger>
-              <TabsTrigger value='reports' disabled>
-                Reports
-              </TabsTrigger>
-              <TabsTrigger value='notifications' disabled>
-                Notifications
-              </TabsTrigger>
-            </TabsList>
-          </div>
-          <TabsContent value='overview' className='space-y-4'>
-            <div className='grid gap-4 sm:grid-cols-2 lg:grid-cols-4'>
-              <Card>
-                <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
-                  <CardTitle className='text-sm font-medium'>
-                    Total Revenue
-                  </CardTitle>
-                  <svg
-                    xmlns='http://www.w3.org/2000/svg'
-                    viewBox='0 0 24 24'
-                    fill='none'
-                    stroke='currentColor'
-                    strokeLinecap='round'
-                    strokeLinejoin='round'
-                    strokeWidth='2'
-                    className='h-4 w-4 text-muted-foreground'
-                  >
-                    <path d='M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6' />
-                  </svg>
-                </CardHeader>
-                <CardContent>
-                  <div className='text-2xl font-bold'>$45,231.89</div>
-                  <p className='text-xs text-muted-foreground'>
-                    +20.1% from last month
-                  </p>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
-                  <CardTitle className='text-sm font-medium'>
-                    Subscriptions
-                  </CardTitle>
-                  <svg
-                    xmlns='http://www.w3.org/2000/svg'
-                    viewBox='0 0 24 24'
-                    fill='none'
-                    stroke='currentColor'
-                    strokeLinecap='round'
-                    strokeLinejoin='round'
-                    strokeWidth='2'
-                    className='h-4 w-4 text-muted-foreground'
-                  >
-                    <path d='M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2' />
-                    <circle cx='9' cy='7' r='4' />
-                    <path d='M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75' />
-                  </svg>
-                </CardHeader>
-                <CardContent>
-                  <div className='text-2xl font-bold'>+2350</div>
-                  <p className='text-xs text-muted-foreground'>
-                    +180.1% from last month
-                  </p>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
-                  <CardTitle className='text-sm font-medium'>Sales</CardTitle>
-                  <svg
-                    xmlns='http://www.w3.org/2000/svg'
-                    viewBox='0 0 24 24'
-                    fill='none'
-                    stroke='currentColor'
-                    strokeLinecap='round'
-                    strokeLinejoin='round'
-                    strokeWidth='2'
-                    className='h-4 w-4 text-muted-foreground'
-                  >
-                    <rect width='20' height='14' x='2' y='5' rx='2' />
-                    <path d='M2 10h20' />
-                  </svg>
-                </CardHeader>
-                <CardContent>
-                  <div className='text-2xl font-bold'>+12,234</div>
-                  <p className='text-xs text-muted-foreground'>
-                    +19% from last month
-                  </p>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
-                  <CardTitle className='text-sm font-medium'>
-                    Active Now
-                  </CardTitle>
-                  <svg
-                    xmlns='http://www.w3.org/2000/svg'
-                    viewBox='0 0 24 24'
-                    fill='none'
-                    stroke='currentColor'
-                    strokeLinecap='round'
-                    strokeLinejoin='round'
-                    strokeWidth='2'
-                    className='h-4 w-4 text-muted-foreground'
-                  >
-                    <path d='M22 12h-4l-3 9L9 3l-3 9H2' />
-                  </svg>
-                </CardHeader>
-                <CardContent>
-                  <div className='text-2xl font-bold'>+573</div>
-                  <p className='text-xs text-muted-foreground'>
-                    +201 since last hour
-                  </p>
-                </CardContent>
-              </Card>
-            </div>
-            <div className='grid grid-cols-1 gap-4 lg:grid-cols-7'>
-              <Card className='col-span-1 lg:col-span-4'>
-                <CardHeader>
-                  <CardTitle>Overview</CardTitle>
-                </CardHeader>
-                <CardContent className='ps-2'>
-                  <Overview />
-                </CardContent>
-              </Card>
-              <Card className='col-span-1 lg:col-span-3'>
-                <CardHeader>
-                  <CardTitle>Recent Sales</CardTitle>
-                  <CardDescription>
-                    You made 265 sales this month.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <RecentSales />
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
-          <TabsContent value='analytics' className='space-y-4'>
-            <Analytics />
-          </TabsContent>
-        </Tabs>
       </Main>
     </>
   )
 }
-
-const topNav = [
-  {
-    title: 'Overview',
-    href: 'dashboard/overview',
-    isActive: true,
-    disabled: false,
-  },
-  {
-    title: 'Customers',
-    href: 'dashboard/customers',
-    isActive: false,
-    disabled: true,
-  },
-  {
-    title: 'Products',
-    href: 'dashboard/products',
-    isActive: false,
-    disabled: true,
-  },
-  {
-    title: 'Settings',
-    href: 'dashboard/settings',
-    isActive: false,
-    disabled: true,
-  },
-]

@@ -1,68 +1,140 @@
-:root {
-  --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.129 0.042 264.695);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.129 0.042 264.695);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.129 0.042 264.695);
-  --primary: oklch(0.208 0.042 265.755);
-  --primary-foreground: oklch(0.984 0.003 247.858);
-  --secondary: oklch(0.968 0.007 247.896);
-  --secondary-foreground: oklch(0.208 0.042 265.755);
-  --muted: oklch(0.968 0.007 247.896);
-  --muted-foreground: oklch(0.554 0.046 257.417);
-  --accent: oklch(0.968 0.007 247.896);
-  --accent-foreground: oklch(0.208 0.042 265.755);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.929 0.013 255.508);
-  --input: oklch(0.929 0.013 255.508);
-  --ring: oklch(0.704 0.04 256.788);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
+/* Haffer type family adapted from the OSMO design system */
+@font-face {
+  font-family: 'Haffer';
+  src: url('/fonts/HafferStandardUprights-VF.ttf') format('truetype-variations');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Haffer XH';
+  src: url('/fonts/HafferXHRegular.woff2') format('woff2');
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Haffer Mono';
+  src: url('/fonts/HafferMonoRegular.woff2') format('woff2');
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Haffer Mono';
+  src: url('/fonts/HafferMonoMedium.woff2') format('woff2');
+  font-weight: 500;
+  font-display: swap;
+}
 
-  --sidebar: var(--background);
-  --sidebar-foreground: var(--foreground);
-  --sidebar-primary: var(--primary);
-  --sidebar-primary-foreground: var(--primary-foreground);
-  --sidebar-accent: var(--accent);
-  --sidebar-accent-foreground: var(--accent-foreground);
-  --sidebar-border: var(--border);
-  --sidebar-ring: var(--ring);
+/* Neutral UI tokens — OSMO warm neutrals + ATFX blue cluster (navy anchor) */
+:root {
+  --radius: 0.75rem;
+  /* OSMO signature easing */
+  --ease-osmo: cubic-bezier(0.625, 0.05, 0, 1);
+
+  --brand-navy: #0f2c52;
+  /* Blue depth scale (inverted: 50 = darkest → 700 = lightest) — #3d8fd4 is the UI highlight */
+  --highlight-50: #071829;
+  --highlight-100: #0f2c52;
+  --highlight-200: #164a7a;
+  --highlight-300: #1e63a8;
+  --highlight-400: #3d8fd4;
+  --highlight-500: #7eb8f0;
+  --highlight-600: #c5ddf8;
+  --highlight-700: #edf4fc;
+  --highlight: var(--highlight-400);
+  --highlight-foreground: #ffffff;
+
+  --background: #faf9f7;
+  --foreground: #201d1d;
+  --card: oklch(1 0 0);
+  --card-foreground: #201d1d;
+  --popover: oklch(1 0 0);
+  --popover-foreground: #201d1d;
+  --primary: var(--highlight);
+  --primary-foreground: var(--highlight-foreground);
+  --secondary: var(--highlight-700);
+  --secondary-foreground: var(--highlight-50);
+  --muted: #f4f4f4;
+  --muted-foreground: #817f7f;
+  --accent: var(--highlight-600);
+  --accent-foreground: var(--highlight-50);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: #eaeaea;
+  --input: #eaeaea;
+  --ring: var(--highlight-300);
+  --chart-1: var(--highlight);
+  --chart-2: var(--highlight-300);
+  --chart-3: var(--highlight-200);
+  --chart-4: var(--highlight-500);
+  --chart-5: var(--highlight-100);
+
+  --sidebar: var(--highlight-700);
+  --sidebar-foreground: #201d1d;
+  --sidebar-primary: var(--highlight);
+  --sidebar-primary-foreground: var(--highlight-foreground);
+  --sidebar-accent: var(--highlight-600);
+  --sidebar-accent-foreground: var(--highlight-50);
+  --sidebar-border: color-mix(in oklch, var(--highlight-500) 55%, var(--border));
+  --sidebar-ring: var(--highlight-300);
 }
 
 .dark {
-  --background: oklch(0.129 0.042 264.695);
-  --foreground: oklch(0.984 0.003 247.858);
-  --card: oklch(0.14 0.04 259.21);
-  --card-foreground: oklch(0.984 0.003 247.858);
-  --popover: oklch(0.208 0.042 265.755);
-  --popover-foreground: oklch(0.984 0.003 247.858);
-  --primary: oklch(0.929 0.013 255.508);
-  --primary-foreground: oklch(0.208 0.042 265.755);
-  --secondary: oklch(0.279 0.041 260.031);
-  --secondary-foreground: oklch(0.984 0.003 247.858);
-  --muted: oklch(0.279 0.041 260.031);
-  --muted-foreground: oklch(0.704 0.04 256.788);
-  --accent: oklch(0.279 0.041 260.031);
-  --accent-foreground: oklch(0.984 0.003 247.858);
+  --highlight-foreground: #ffffff;
+
+  --background: #151313;
+  --foreground: #f4f4f4;
+  --card: #201d1d;
+  --card-foreground: #f4f4f4;
+  --popover: #201d1d;
+  --popover-foreground: #f4f4f4;
+  --primary: var(--highlight);
+  --primary-foreground: var(--highlight-50);
+  --secondary: color-mix(in oklch, var(--highlight-200) 28%, var(--background));
+  --secondary-foreground: var(--highlight-600);
+  --muted: #2a2727;
+  --muted-foreground: #b8b8b8;
+  --accent: color-mix(in oklch, var(--highlight-200) 32%, var(--background));
+  --accent-foreground: var(--highlight-600);
   --destructive: oklch(0.704 0.191 22.216);
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.551 0.027 264.364);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
+  --ring: var(--highlight-400);
+  --chart-1: var(--highlight);
+  --chart-2: var(--highlight-300);
+  --chart-3: var(--highlight-200);
+  --chart-4: var(--highlight-500);
+  --chart-5: var(--highlight-100);
+
+  --sidebar: #201d1d;
+  --sidebar-foreground: #f4f4f4;
+  --sidebar-primary: var(--highlight);
+  --sidebar-primary-foreground: var(--highlight-50);
+  --sidebar-accent: color-mix(in oklch, var(--highlight-200) 28%, var(--sidebar));
+  --sidebar-accent-foreground: var(--highlight-600);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: var(--highlight-400);
 }
 
 @theme inline {
-  --font-inter: 'Inter', 'sans-serif';
+  /* Body/UI font is now Haffer (OSMO); name kept so existing font-inter usage swaps in place */
+  --font-inter: 'Haffer', 'Inter', system-ui, sans-serif;
+  --font-display: 'Haffer XH', 'Haffer', system-ui, sans-serif;
+  --font-mono: 'Haffer Mono', ui-monospace, monospace;
   --font-manrope: 'Manrope', 'sans-serif';
+  --font-mulish: 'Mulish', 'sans-serif';
+
+  --color-atfx-navy: var(--brand-navy);
+  --color-atfx-orange: oklch(0.679 0.185 41.4);
+  --color-atfx-highlight: var(--highlight);
+  --color-atfx-blue: var(--highlight);
+  --color-highlight-50: var(--highlight-50);
+  --color-highlight-100: var(--highlight-100);
+  --color-highlight-200: var(--highlight-200);
+  --color-highlight-300: var(--highlight-300);
+  --color-highlight-400: var(--highlight-400);
+  --color-highlight-500: var(--highlight-500);
+  --color-highlight-600: var(--highlight-600);
+  --color-highlight-700: var(--highlight-700);
 
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);

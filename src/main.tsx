@@ -7,11 +7,10 @@ import {
   QueryClientProvider,
 } from '@tanstack/react-query'
 import { RouterProvider, createRouter } from '@tanstack/react-router'
+import { ClerkProvider } from '@clerk/react'
 import { toast } from 'sonner'
-import { useAuthStore } from '@/stores/auth-store'
 import { handleServerError } from '@/lib/handle-server-error'
-import { DirectionProvider } from './context/direction-provider'
-import { FontProvider } from './context/font-provider'
+import { DirectionProvider } from '@radix-ui/react-direction'
 import { ThemeProvider } from './context/theme-provider'
 // Generated Routes
 import { routeTree } from './routeTree.gen'
@@ -53,9 +52,7 @@ const queryClient = new QueryClient({
       if (error instanceof AxiosError) {
         if (error.response?.status === 401) {
           toast.error('Session expired!')
-          useAuthStore.getState().auth.reset()
-          const redirect = `${router.history.location.href}`
-          router.navigate({ to: '/sign-in', search: { redirect } })
+          router.navigate({ to: '/sign-in' })
         }
         if (error.response?.status === 500) {
           toast.error('Internal Server Error!')
@@ -87,21 +84,32 @@ declare module '@tanstack/react-router' {
   }
 }
 
+// Clerk handles app-wide authentication; the key is required to boot
+const CLERK_PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY
+if (!CLERK_PUBLISHABLE_KEY) {
+  throw new Error('Missing VITE_CLERK_PUBLISHABLE_KEY in .env')
+}
+
 // Render the app
 const rootElement = document.getElementById('root')!
 if (!rootElement.innerHTML) {
   const root = ReactDOM.createRoot(rootElement)
   root.render(
     <StrictMode>
-      <QueryClientProvider client={queryClient}>
-        <ThemeProvider>
-          <FontProvider>
-            <DirectionProvider>
+      <ClerkProvider
+        publishableKey={CLERK_PUBLISHABLE_KEY}
+        signInUrl='/sign-in'
+        signUpUrl='/sign-up'
+        afterSignOutUrl='/sign-in'
+      >
+        <QueryClientProvider client={queryClient}>
+          <ThemeProvider>
+            <DirectionProvider dir='ltr'>
               <RouterProvider router={router} />
             </DirectionProvider>
-          </FontProvider>
-        </ThemeProvider>
-      </QueryClientProvider>
+          </ThemeProvider>
+        </QueryClientProvider>
+      </ClerkProvider>
     </StrictMode>
   )
 }

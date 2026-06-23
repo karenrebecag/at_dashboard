@@ -1,5 +1,6 @@
 import { type QueryClient } from '@tanstack/react-query'
 import { createRootRouteWithContext, Outlet } from '@tanstack/react-router'
+import { siteConfig } from '@/config/site'
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import { TanStackRouterDevtools } from '@tanstack/react-router-devtools'
 import { Toaster } from '@/components/ui/sonner'
@@ -10,6 +11,13 @@ import { NotFoundError } from '@/features/errors/not-found-error'
 export const Route = createRootRouteWithContext<{
   queryClient: QueryClient
 }>()({
+  head: () => ({
+    meta: [
+      { title: siteConfig.name },
+      { name: 'description', content: siteConfig.description },
+      { name: 'application-name', content: siteConfig.name },
+    ],
+  }),
   component: () => {
     return (
       <>
