@@ -80,7 +80,7 @@ export function useAtfxDescribe(
   params?: { mode?: string; search?: string; field?: string },
 ) {
   return useQuery({
-    queryKey: atfxKeys.describe(sobject, params?.mode),
+    queryKey: atfxKeys.describe(sobject, params),
     queryFn: () => atfxApi.describe(sobject, params),
     staleTime: STALE_MS,
     enabled: Boolean(sobject),

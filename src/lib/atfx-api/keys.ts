@@ -4,8 +4,10 @@ export const atfxKeys = {
   org: () => [...atfxKeys.all, 'org'] as const,
   schema: () => [...atfxKeys.all, 'schema'] as const,
   schemaSection: (section: string) => [...atfxKeys.all, 'schema', section] as const,
-  describe: (sobject: string, mode?: string) =>
-    [...atfxKeys.all, 'describe', sobject, mode ?? 'curated'] as const,
+  describe: (
+    sobject: string,
+    params?: { mode?: string; search?: string; field?: string },
+  ) => [...atfxKeys.all, 'describe', sobject, params ?? {}] as const,
   picklists: (object: string) => [...atfxKeys.all, 'picklists', object] as const,
   aggregate: (params: unknown) => [...atfxKeys.all, 'aggregate', params] as const,
   search: (params: unknown) => [...atfxKeys.all, 'search', params] as const,
