@@ -1,0 +1,17 @@
+{
+  "name": "ATFX Dashboard",
+  "short_name": "ATFX",
+  "description": "Salesforce lead pipeline and CRM analytics for ATFX",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#18181b",
+  "lang": "en",
+  "icons": [
+    {
+      "src": "/images/atfx/favicon.png",
+      "sizes": "256x256",
+      "type": "image/png"
+    }
+  ]
+}

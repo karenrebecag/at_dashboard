@@ -1,5 +1,5 @@
 import axios, { type AxiosInstance } from 'axios'
-import { atfxEnv, isAtfxConfigured } from './env'
+import { atfxApiBaseUrl, atfxEnv, isAtfxConfigured } from './env'
 import type {
   AggregateParams,
   AtfxApiEnvelope,
@@ -14,20 +14,45 @@ import type {
 
 export { isAtfxConfigured } from './env'
 
+let bypassCache = false
+
+/** Skip BFF edge cache for the next in-flight requests (manual Refresh). */
+export function runWithBypassCache<T>(fn: () => Promise<T>): Promise<T> {
+  bypassCache = true
+  return fn().finally(() => {
+    bypassCache = false
+  })
+}
+
 function createClient(): AxiosInstance {
   if (!isAtfxConfigured()) {
     throw new Error(
-      'ATFX API not configured — set VITE_ATFX_API_URL and VITE_ATFX_API_TOKEN in .env'
+      'ATFX API not configured — set VITE_ATFX_USE_BFF=true (default) or legacy VITE_ATFX_API_URL + VITE_ATFX_API_TOKEN',
     )
   }
-  return axios.create({
-    baseURL: `${atfxEnv.apiUrl}/api`,
-    headers: {
-      Authorization: `Bearer ${atfxEnv.apiToken}`,
-      Accept: 'application/json',
-    },
+
+  const headers: Record<string, string> = {
+    Accept: 'application/json',
+  }
+
+  if (!atfxEnv.useBff && atfxEnv.apiToken) {
+    headers.Authorization = `Bearer ${atfxEnv.apiToken}`
+  }
+
+  const instance = axios.create({
+    baseURL: atfxApiBaseUrl(),
+    headers,
     timeout: 90_000,
   })
+
+  instance.interceptors.request.use((config) => {
+    if (bypassCache) {
+      config.headers.set('X-ATFX-Bypass-Cache', '1')
+    }
+    return config
+  })
+
+  return instance
 }
 
 let client: AxiosInstance | null = null

@@ -1,20 +1,28 @@
-import { RefreshCw } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { useInvalidateAtfx } from '@/lib/atfx-api'
 import { useState } from 'react'
+import { RefreshCw } from 'lucide-react'
+import { toast } from 'sonner'
+import { Button } from '@/components/ui/button'
+import { useRefetchAtfx } from '@/lib/atfx-api'
 
 export function RefreshButton() {
-  const invalidate = useInvalidateAtfx()
+  const refetch = useRefetchAtfx()
   const [spinning, setSpinning] = useState(false)
 
   return (
     <Button
       variant='outline'
       size='sm'
+      disabled={spinning}
       onClick={async () => {
         setSpinning(true)
-        await invalidate()
-        setTimeout(() => setSpinning(false), 600)
+        try {
+          await refetch()
+          toast.success('Dashboard data refreshed')
+        } catch {
+          toast.error('Some requests failed — check org connection')
+        } finally {
+          setSpinning(false)
+        }
       }}
     >
       <RefreshCw className={`me-2 h-4 w-4 ${spinning ? 'animate-spin' : ''}`} />

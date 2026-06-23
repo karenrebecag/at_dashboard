@@ -13,6 +13,18 @@ export const atfxKeys = {
     [...atfxKeys.all, 'record', object, id, fields ?? ''] as const,
   query: (params: unknown) => [...atfxKeys.all, 'query', params] as const,
   leadsByBdm: (period: string) => [...atfxKeys.all, 'leads', 'by-bdm', period] as const,
+  leadsByBdmAllTime: (limit: number) =>
+    [...atfxKeys.all, 'leads', 'by-bdm-all-time', limit] as const,
   leadsByCountry: (days: number) => [...atfxKeys.all, 'leads', 'by-country', days] as const,
   conversionRate: (days: number) => [...atfxKeys.all, 'leads', 'conversion', days] as const,
+  leadsByStatus: (days: number, country?: string) =>
+    [...atfxKeys.all, 'leads', 'by-status', days, country ?? ''] as const,
+  leadsTrend: (days: number) => [...atfxKeys.all, 'leads', 'trend', days] as const,
+  leadsTrendConverted: (days: number) =>
+    [...atfxKeys.all, 'leads', 'trend-converted', days] as const,
+  accountsByBdm: (limit: number) => [...atfxKeys.all, 'accounts', 'by-bdm', limit] as const,
+  accountsByCountry: (limit: number) =>
+    [...atfxKeys.all, 'accounts', 'by-country', limit] as const,
+  newAccounts: (days: number) =>
+    [...atfxKeys.all, 'accounts', 'new', days] as const,
 }

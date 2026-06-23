@@ -11,10 +11,23 @@
     scrollbar-color: var(--border) transparent;
   }
   html {
-    @apply overflow-x-hidden;
+    @apply overflow-x-hidden font-inter;
+    /* OSMO-style fluid scaling — gentle so dense layouts stay stable */
+    font-size: clamp(0.9375rem, 0.9rem + 0.25vw, 1.0625rem);
   }
   body {
-    @apply min-h-svh w-full bg-background text-foreground has-[div[data-variant='inset']]:bg-sidebar;
+    @apply min-h-svh w-full bg-background text-foreground;
+    /* OSMO body tracking */
+    letter-spacing: -0.01em;
+  }
+
+  /* OSMO display type — Haffer XH with tight tracking on headings & card titles */
+  h1,
+  h2,
+  h3,
+  [data-slot='card-title'] {
+    font-family: var(--font-display);
+    letter-spacing: -0.02em;
   }
 
   /* Override Radix scroll locking for sticky headers */
@@ -84,4 +97,291 @@
   to {
     height: 0;
   }
+}
+
+:root {
+  --map-region: var(--highlight-600);
+  --map-region-hover: var(--highlight-500);
+  --map-region-selected: var(--highlight);
+  --map-region-disabled: var(--muted);
+  --map-region-stroke: var(--border);
+  --map-region-stroke-hover: var(--highlight-300);
+  --map-region-focus-ring: var(--ring);
+  --map-label: var(--muted-foreground);
+  --map-label-hover: var(--foreground);
+  --map-label-selected: var(--highlight-foreground);
+}
+
+.dark {
+  --map-region: color-mix(in oklch, var(--highlight-200) 35%, var(--muted));
+  --map-region-hover: color-mix(in oklch, var(--highlight-300) 55%, var(--muted));
+  --map-region-selected: var(--highlight);
+  --map-region-disabled: var(--muted);
+  --map-region-stroke: var(--border);
+  --map-region-stroke-hover: var(--highlight-300);
+  --map-region-focus-ring: var(--ring);
+  --map-label: var(--muted-foreground);
+  --map-label-hover: var(--foreground);
+  --map-label-selected: var(--highlight-foreground);
+}
+
+@theme inline {
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-map-label-selected: var(--map-label-selected);
+  --color-map-label-hover: var(--map-label-hover);
+  --color-map-label: var(--map-label);
+  --color-map-region-focus-ring: var(--map-region-focus-ring);
+  --color-map-region-stroke-hover: var(--map-region-stroke-hover);
+  --color-map-region-stroke: var(--map-region-stroke);
+  --color-map-region-disabled: var(--map-region-disabled);
+  --color-map-region-selected: var(--map-region-selected);
+  --color-map-region-hover: var(--map-region-hover);
+  --color-map-region: var(--map-region);
+}
+
+/* transitions.dev #14 — skeleton → chart reveal. Wired in lazy-mount.tsx:
+   skeleton overlays the chart (absolute) so variable-height charts keep
+   their own layout; on reveal it cross-fades + blurs out as content fades in. */
+:root {
+  --reveal-dur: 520ms;
+  --reveal-blur: 3px;
+  --reveal-ease: var(--ease-osmo, cubic-bezier(0.625, 0.05, 0, 1));
+}
+.t-skel {
+  position: relative;
+}
+.t-skel-skeleton {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  opacity: 1;
+  filter: blur(0);
+  transition:
+    opacity var(--reveal-dur) var(--reveal-ease),
+    filter var(--reveal-dur) var(--reveal-ease);
+}
+.t-skel-content {
+  position: relative;
+  z-index: 1;
+  opacity: 0;
+  filter: blur(var(--reveal-blur));
+  transition:
+    opacity var(--reveal-dur) var(--reveal-ease),
+    filter var(--reveal-dur) var(--reveal-ease);
+}
+.t-skel.is-revealed .t-skel-skeleton {
+  opacity: 0;
+  filter: blur(var(--reveal-blur));
+  pointer-events: none;
+}
+.t-skel.is-revealed .t-skel-content {
+  opacity: 1;
+  filter: blur(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .t-skel-skeleton,
+  .t-skel-content {
+    transition: none !important;
+  }
+}
+
+/* Leads by country — choropleth on inverted blue cluster (50 dark → 700 light).
+   Scoped under .leads-country-map; see leads-country-map-scale.ts for bucket order. */
+.leads-country-map [data-slot='map-region'] {
+  --map-region: color-mix(in oklch, var(--muted) 88%, var(--background));
+  --map-region-hover: var(--highlight-600);
+  --map-region-stroke-hover: var(--highlight-500);
+}
+
+.leads-country-map .lc-1 {
+  --map-region: var(--highlight-700);
+  --map-region-hover: var(--highlight-600);
+  --map-region-stroke-hover: var(--highlight-500);
+}
+.leads-country-map .lc-2 {
+  --map-region: var(--highlight-600);
+  --map-region-hover: var(--highlight-500);
+  --map-region-stroke-hover: var(--highlight-400);
+}
+.leads-country-map .lc-3 {
+  --map-region: var(--highlight-500);
+  --map-region-hover: var(--highlight-400);
+  --map-region-stroke-hover: var(--highlight-300);
+}
+.leads-country-map .lc-4 {
+  --map-region: var(--highlight-400);
+  --map-region-hover: var(--highlight-300);
+  --map-region-stroke-hover: var(--highlight-200);
+}
+.leads-country-map .lc-5 {
+  --map-region: var(--highlight-200);
+  --map-region-hover: var(--highlight-100);
+  --map-region-stroke-hover: var(--highlight-50);
+}
+
+.dark .leads-country-map [data-slot='map-region'] {
+  --map-region: color-mix(in oklch, var(--muted) 72%, var(--background));
+  --map-region-hover: var(--highlight-500);
+}
+
+.dark .leads-country-map .lc-1 {
+  --map-region: color-mix(in oklch, var(--highlight-700) 55%, var(--muted));
+}
+.dark .leads-country-map .lc-2 {
+  --map-region: color-mix(in oklch, var(--highlight-600) 65%, var(--muted));
+}
+.dark .leads-country-map .lc-3 {
+  --map-region: color-mix(in oklch, var(--highlight-500) 75%, var(--muted));
+}
+.dark .leads-country-map .lc-4 {
+  --map-region: var(--highlight-400);
+}
+.dark .leads-country-map .lc-5 {
+  --map-region: var(--highlight-200);
+}
+
+/* ---- OSMO surface & depth pass ---- */
+
+/* Surfaces have no stroke — depth comes from elevation + fill contrast */
+[data-slot='card'] {
+  border-color: transparent;
+  box-shadow:
+    0 1px 2px -1px color-mix(in oklch, var(--foreground) 14%, transparent),
+    0 6px 20px -10px color-mix(in oklch, var(--foreground) 12%, transparent);
+}
+.dark [data-slot='card'] {
+  box-shadow:
+    0 1px 2px -1px rgb(0 0 0 / 0.5),
+    0 8px 24px -12px rgb(0 0 0 / 0.55);
+}
+
+/* Text depth via opacity tiers rather than separate colors */
+[data-slot='card-description'] {
+  color: color-mix(in oklch, var(--foreground) 55%, transparent);
+}
+
+/* Hairline dividers (OSMO ~0.1 of foreground) */
+[data-slot='separator'] {
+  background-color: color-mix(in oklch, var(--foreground) 10%, transparent);
+}
+
+/* Badges read as OSMO eyebrow tags — Haffer Mono, uppercase, squared.
+   In @layer components so per-badge utilities (metric deltas) can override. */
+@layer components {
+  [data-slot='badge'] {
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    border-radius: 0.3rem;
+  }
+}
+
+/* transitions.dev #15 — shimmer text for "syncing" loading labels */
+:root {
+  --shimmer-dur: 2000ms;
+  --shimmer-band: 320%;
+  --shimmer-ease: linear;
+  --shimmer-base: var(--muted-foreground);
+  --shimmer-highlight: var(--foreground);
+}
+.t-shimmer {
+  position: relative;
+  display: inline-block;
+  color: var(--shimmer-base);
+}
+.t-shimmer::before {
+  content: attr(data-text);
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: linear-gradient(
+    90deg,
+    transparent 0%,
+    transparent 40%,
+    var(--shimmer-highlight) 50%,
+    transparent 60%,
+    transparent 100%
+  );
+  background-size: var(--shimmer-band) 100%;
+  background-repeat: no-repeat;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  animation: t-shimmer var(--shimmer-dur) var(--shimmer-ease) infinite;
+}
+@keyframes t-shimmer {
+  0% {
+    background-position: 100% 0;
+  }
+  100% {
+    background-position: 0% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .t-shimmer::before {
+    animation: none !important;
+  }
+}
+
+/* OSMO-style staggered mount — fade + rise with the signature easing */
+@keyframes osmo-rise {
+  from {
+    opacity: 0;
+    transform: translateY(0.75rem);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.osmo-stagger > * {
+  animation: osmo-rise 0.6s var(--ease-osmo, ease-out) both;
+}
+.osmo-stagger > *:nth-child(1) {
+  animation-delay: 0.04s;
+}
+.osmo-stagger > *:nth-child(2) {
+  animation-delay: 0.1s;
+}
+.osmo-stagger > *:nth-child(3) {
+  animation-delay: 0.16s;
+}
+.osmo-stagger > *:nth-child(4) {
+  animation-delay: 0.22s;
+}
+.osmo-stagger > *:nth-child(5) {
+  animation-delay: 0.28s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .osmo-stagger > * {
+    animation: none;
+  }
+}
+
+/* Clerk widget — blend into the page: drop the card chrome, footer and header. */
+.cl-footer,
+.cl-footerAction {
+  display: none !important;
+}
+.cl-header {
+  display: none !important;
+}
+.cl-card,
+.cl-cardBox,
+.cl-rootBox {
+  background: transparent !important;
+  box-shadow: none !important;
+  border: none !important;
 }

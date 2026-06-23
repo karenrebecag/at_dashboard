@@ -1,5 +1,4 @@
 import { Skeleton } from '@/components/ui/skeleton'
-import { CacheBadge } from './cache-badge'
 import { useAtfxOrg } from '@/lib/atfx-api'
 
 export function OrgStatus() {
@@ -14,7 +13,6 @@ export function OrgStatus() {
       <span>
         {org?.username} · {org?.connectedStatus}
       </span>
-      <CacheBadge cached={data?.meta?.cached as boolean | undefined} />
     </div>
   )
 }

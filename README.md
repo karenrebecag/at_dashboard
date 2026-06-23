@@ -1,119 +1,113 @@
-# Shadcn Admin Dashboard
+# ATFX Dashboard
 
-Admin Dashboard UI crafted with Shadcn and Vite. Built with responsiveness and accessibility in mind.
+Internal web dashboard for the ATFX brokerage Salesforce org. Live lead pipeline KPIs, BDM rankings, conversion metrics, and CRM record search — backed by the [SalesforceATFX_mcp](https://github.com/) REST API (`/api`).
 
-![alt text](public/images/shadcn-admin.png)
-
-[![Sponsored by Clerk](https://img.shields.io/badge/Sponsored%20by-Clerk-5b6ee1?logo=clerk)](https://go.clerk.com/GttUAaK)
-
-I've been creating dashboard UIs at work and for my personal projects. I always wanted to make a reusable collection of dashboard UI for future projects; and here it is now. While I've created a few custom components, some of the code is directly adapted from ShadcnUI examples.
-
-> This is not a starter project (template) though. I'll probably make one in the future.
+**Stack:** React 19 · Vite · TanStack Router & Query · Tailwind 4 · shadcn/ui · Clerk auth · Vercel BFF
 
 ## Features
 
-- Light/dark mode
-- Responsive
-- Accessible
-- With built-in Sidebar component
-- Global search command
-- 10+ pages
-- Extra custom components
-- RTL support
+| Area | Description |
+|------|-------------|
+| **Dashboard** (`/`) | KPIs, pipeline funnel by Status, top BDMs, leads by country |
+| **Search** (`/atfx/search`) | Parameterized Lead / Account / Contact search + record detail drawer |
+| **API explorer** (`/atfx/explore`) | Live endpoint catalog and org metadata |
 
-<details>
-<summary>Customized Components (click to expand)</summary>
+Filters (`days`, `period`, `country`) sync to the URL and drive all dashboard widgets.
 
-This project uses Shadcn UI components, but some have been slightly modified for better RTL (Right-to-Left) support and other improvements. These customized components differ from the original Shadcn UI versions.
+## Architecture
 
-If you want to update components using the Shadcn CLI (e.g., `npx shadcn@latest add <component>`), it's generally safe for non-customized components. For the listed customized ones, you may need to manually merge changes to preserve the project's modifications and avoid overwriting RTL support or other updates.
+```
+Browser (dashboard)
+  → /api/atfx/*          Vercel BFF (Runtime Cache, 5 min TTL)
+      → VM /api/*        SalesforceATFX_mcp (sf CLI + optional Redis)
+          → Salesforce
 
-> If you don't require RTL support, you can safely update the 'RTL Updated Components' via the Shadcn CLI, as these changes are primarily for RTL compatibility. The 'Modified Components' may have other customizations to consider.
-
-### Modified Components
-
-- scroll-area
-- sonner
-- separator
-
-### RTL Updated Components
-
-- alert-dialog
-- calendar
-- command
-- dialog
-- dropdown-menu
-- select
-- table
-- sheet
-- sidebar
-- switch
-
-**Notes:**
-
-- **Modified Components**: These have general updates, potentially including RTL adjustments.
-- **RTL Updated Components**: These have specific changes for RTL language support (e.g., layout, positioning).
-- For implementation details, check the source files in `src/components/ui/`.
-- All other Shadcn UI components in the project are standard and can be safely updated via the CLI.
-
-</details>
-
-## Tech Stack
-
-**UI:** [ShadcnUI](https://ui.shadcn.com) (TailwindCSS + RadixUI)
-
-**Build Tool:** [Vite](https://vitejs.dev/)
-
-**Routing:** [TanStack Router](https://tanstack.com/router/latest)
-
-**Type Checking:** [TypeScript](https://www.typescriptlang.org/)
-
-**Linting/Formatting:** [ESLint](https://eslint.org/) & [Prettier](https://prettier.io/)
-
-**Icons:** [Lucide Icons](https://lucide.dev/icons/), [Tabler Icons](https://tabler.io/icons) (Brand icons only)
-
-**Auth (partial):** [Clerk](https://go.clerk.com/GttUAaK)
-
-## Run Locally
-
-Clone the project
-
-```bash
-  git clone https://github.com/satnaing/shadcn-admin.git
+Claude web MCP → VM /mcp only (unchanged)
 ```
 
-Go to the project directory
+The browser **never** holds the `MCP_ACCESS_TOKEN`. Vercel Functions proxy to the Azure VM and cache responses at the edge. The VM remains the Salesforce gateway (no Connected App OAuth).
+
+## Prerequisites
+
+- Node 20+
+- [pnpm](https://pnpm.io/)
+- Clerk application (publishable key)
+- Running [SalesforceATFX_mcp](https://atfxmcp.westus2.cloudapp.azure.com/health) with a valid `MCP_ACCESS_TOKEN`
+
+## Setup (local)
 
 ```bash
-  cd shadcn-admin
+pnpm install
+cp .env.example .env
+# VITE_CLERK_PUBLISHABLE_KEY + ATFX_UPSTREAM_TOKEN (server-side, not VITE_*)
+pnpm dev
 ```
 
-Install dependencies
+Open `http://localhost:5173`. Vite proxies `/api/atfx` → VM `/api` with the Bearer token from `.env`.
+
+To exercise the full Vercel BFF locally (including Runtime Cache):
 
 ```bash
-  pnpm install
+pnpm dev:vercel
 ```
 
-Start the server
+## Deploy (Vercel)
+
+1. Import the repo in Vercel (framework preset: Vite).
+2. Set **environment variables** (Production + Preview):
+
+| Variable | Required | Purpose |
+|----------|----------|---------|
+| `VITE_CLERK_PUBLISHABLE_KEY` | Yes | Clerk authentication |
+| `ATFX_UPSTREAM_URL` | Yes | VM origin, e.g. `https://atfxmcp.westus2.cloudapp.azure.com` |
+| `ATFX_UPSTREAM_TOKEN` | Yes | Same as `MCP_ACCESS_TOKEN` on the VM — **server-only** |
+| `ATFX_CACHE_TTL_MS` | No | BFF cache TTL (default `300000` = 5 min) |
+
+3. Deploy. The dashboard calls `/api/atfx/*` on the same origin.
+
+Manual **Refresh** in the UI sends `X-ATFX-Bypass-Cache` to skip the BFF cache and refetch from Salesforce via the VM.
+
+## Environment (client)
+
+| Variable | Required | Purpose |
+|----------|----------|---------|
+| `VITE_CLERK_PUBLISHABLE_KEY` | Yes | Clerk authentication |
+| `VITE_ATFX_USE_BFF` | No | Default `true` — use `/api/atfx` proxy |
+| `VITE_ATFX_API_BASE` | No | BFF path prefix (default `/api/atfx`) |
+| `VITE_ATFX_QUERY_STALE_MS` | No | TanStack Query stale time (default `60000`) |
+| `VITE_ATFX_DASHBOARD_STALE_MS` | No | Dashboard stale time (default `300000`) |
+
+### Legacy direct mode
+
+Set `VITE_ATFX_USE_BFF=false` and use `VITE_ATFX_API_URL` + `VITE_ATFX_API_TOKEN` to call the VM from the browser (not recommended — token ships in the bundle).
+
+## Scripts
 
 ```bash
-  pnpm run dev
+pnpm dev          # Vite dev server (proxies /api/atfx → VM)
+pnpm dev:vercel   # Vercel dev (BFF + cache)
+pnpm build        # Production build
+pnpm preview      # Preview production build
+pnpm test         # Vitest (browser mode)
+pnpm lint         # ESLint
 ```
 
-## Sponsoring this project ❤️
+## Code layout
 
-If you find this project helpful or use this in your own work, consider [sponsoring me](https://github.com/sponsors/satnaing) to support development and maintenance. You can [buy me a coffee](https://buymeacoffee.com/satnaing) as well. Don’t worry, every penny helps. Thank you! 🙏
+```
+api/
+  atfx/[...path].ts   # Vercel BFF — proxy + Runtime Cache
+  _lib/               # upstream + cache helpers
+src/
+  lib/atfx-api/       # REST client + TanStack Query hooks
+  features/atfx/      # Salesforce widgets and filters
+```
 
-For questions or sponsorship inquiries, feel free to reach out at [satnaingdev@gmail.com](mailto:satnaingdev@gmail.com).
+## Related
 
-### Current Sponsor
-
-- [Clerk](https://go.clerk.com/GttUAaK) - authentication and user management for the modern web
-
-## Author
-
-Crafted with 🤍 by [@satnaing](https://github.com/satnaing)
+- **API server:** `SalesforceATFX_mcp` — MCP on VM; REST shared with BFF upstream
+- **Health check:** `GET https://atfxmcp.westus2.cloudapp.azure.com/health`
 
 ## License
 
-Licensed under the [MIT License](https://choosealicense.com/licenses/mit/)
+MIT — UI scaffold derived from [shadcn-admin](https://github.com/satnaing/shadcn-admin); ATFX integration and data layer are project-specific.
