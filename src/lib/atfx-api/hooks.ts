@@ -1,10 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { atfxApi } from './client'
+import { atfxEnv } from './env'
 import { atfxKeys } from './keys'
 import type { AggregateParams, SearchParams, SoqlQueryParams } from './types'
 
-const STALE_MS = 60_000 // align with server Redis TTL (5m); refetch sooner client-side
-const DASHBOARD_STALE_MS = 30_000
+const STALE_MS = atfxEnv.queryStaleMs
+const DASHBOARD_STALE_MS = atfxEnv.dashboardPollMs
 
 export function useAtfxOrg() {
   return useQuery({

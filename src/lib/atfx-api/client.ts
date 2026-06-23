@@ -1,4 +1,5 @@
 import axios, { type AxiosInstance } from 'axios'
+import { atfxEnv, isAtfxConfigured } from './env'
 import type {
   AggregateParams,
   AtfxApiEnvelope,
@@ -11,12 +12,7 @@ import type {
   SoqlQueryParams,
 } from './types'
 
-const baseURL = import.meta.env.VITE_ATFX_API_URL?.replace(/\/$/, '') ?? ''
-const token = import.meta.env.VITE_ATFX_API_TOKEN ?? ''
-
-export function isAtfxConfigured(): boolean {
-  return Boolean(baseURL && token)
-}
+export { isAtfxConfigured } from './env'
 
 function createClient(): AxiosInstance {
   if (!isAtfxConfigured()) {
@@ -25,9 +21,9 @@ function createClient(): AxiosInstance {
     )
   }
   return axios.create({
-    baseURL: `${baseURL}/api`,
+    baseURL: `${atfxEnv.apiUrl}/api`,
     headers: {
-      Authorization: `Bearer ${token}`,
+      Authorization: `Bearer ${atfxEnv.apiToken}`,
       Accept: 'application/json',
     },
     timeout: 90_000,
