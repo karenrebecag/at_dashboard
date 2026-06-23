@@ -11,7 +11,11 @@ import {
   ChartTooltipContent,
   type ChartConfig,
 } from '@/components/ui/chart'
-import { useAtfxAggregate } from '@/lib/atfx-api'
+import {
+  statusFunnelParams,
+  useAtfxAggregate,
+  useDashboardBatchReady,
+} from '@/lib/atfx-api'
 import { formatters } from '@/lib/planner/formatters'
 
 const STATUS_ORDER = [
@@ -69,15 +73,9 @@ function slugForStatus(status: string): string {
 
 export function StatusFunnelDonutChart() {
   const { days, country, setDays } = useDashboardFilters()
+  const batchReady = useDashboardBatchReady()
 
-  const aggregate = useAtfxAggregate({
-    object: 'Lead',
-    groupBy: ['Status'],
-    days,
-    ...(country ? { filters: { country } } : {}),
-    orderBy: 'desc',
-    limit: 50,
-  })
+  const aggregate = useAtfxAggregate(statusFunnelParams(days, country), batchReady)
 
   const { chartData, chartConfig, totalLeads } = useMemo(() => {
     const rows = aggregate.data?.data?.records ?? []

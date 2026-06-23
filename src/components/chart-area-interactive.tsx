@@ -3,7 +3,7 @@ import { Area, AreaChart, CartesianGrid, XAxis } from 'recharts'
 import { DashboardCardHeader } from '@/components/dashboard/dashboard-card-header'
 import { ChartEmptyState } from '@/components/dashboard/chart-empty-state'
 import { ChartSkeleton } from '@/components/dashboard/chart-skeleton'
-import { Card } from '@/components/ui/card'
+import { FilteredCard } from '@/components/dashboard/filtered-card'
 import {
   ChartContainer,
   ChartTooltip,
@@ -42,12 +42,12 @@ function formatDay(iso: string): string {
 }
 
 export function ChartAreaInteractive() {
-  const { days: filterDays } = useDashboardFilters()
+  const { days: filterDays, country } = useDashboardFilters()
   const isMobile = useIsMobile()
   const [range, setRange] = useState<number>(filterDays)
 
   const batchReady = useDashboardBatchReady()
-  const leads = useLeadsTrend(range, batchReady)
+  const leads = useLeadsTrend(range, country, batchReady)
 
   const chartData = useMemo(() => {
     return (leads.data?.data?.records ?? [])
@@ -90,7 +90,7 @@ export function ChartAreaInteractive() {
   )
 
   return (
-    <Card>
+    <FilteredCard filterKeys={['country']}>
       <DashboardCardHeader
         title='Leads created over time'
         description={`Daily · ${range} day window`}
@@ -136,6 +136,6 @@ export function ChartAreaInteractive() {
           </ChartContainer>
         )}
       </div>
-    </Card>
+    </FilteredCard>
   )
 }

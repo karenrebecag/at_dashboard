@@ -172,3 +172,25 @@
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
 }
+
+/* GSAP number odometer (rolling digits) */
+[data-odometer-element] {
+  display: inline-flex;
+  align-items: center;
+  font-variant-numeric: tabular-nums;
+}
+
+[data-odometer-part='mask'],
+[data-odometer-part='static'] {
+  display: inline-block;
+  overflow: clip;
+  padding: 0.05em;
+  margin: -0.05em;
+}
+
+[data-odometer-part='roller'] {
+  display: block;
+  white-space: pre;
+  text-align: center;
+  will-change: transform;
+}

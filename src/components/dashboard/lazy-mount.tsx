@@ -34,7 +34,10 @@ export function LazyMount({
           observer.disconnect()
         }
       },
-      { rootMargin: '120px' },
+      // Head start: mount ~one screen before the widget scrolls into view so
+      // its render is ready on arrival. The query is already warmed by
+      // useDashboardPrefetch, so this only gates the (heavier) chart render.
+      { rootMargin: '300px' },
     )
     observer.observe(el)
     return () => observer.disconnect()

@@ -1,12 +1,12 @@
 import { ChartAreaInteractive } from '@/components/chart-area-interactive'
 import { DashboardCardHeader } from '@/components/dashboard/dashboard-card-header'
+import { FilteredCard } from '@/components/dashboard/filtered-card'
 import { DashboardSection } from '@/components/dashboard/dashboard-section'
 import { LazyMount } from '@/components/dashboard/lazy-mount'
 import { SiteHeader } from '@/components/dashboard/site-header'
 import { Header } from '@/components/layout/header'
 import { Main } from '@/components/layout/main'
 import { ProfileDropdown } from '@/components/profile-dropdown'
-import { Search } from '@/components/search'
 import { SectionCards } from '@/components/section-cards'
 import { ThemeSwitch } from '@/components/theme-switch'
 import { Card, CardContent } from '@/components/ui/card'
@@ -28,17 +28,20 @@ import {
   DashboardToolbar,
   useDashboardFilters,
 } from '@/features/atfx/dashboard-filters'
+import { useDashboardPrefetch } from '@/lib/atfx-api'
 
 // Fluid side padding — scales with viewport, smaller on mobile
 const DASHBOARD_PAD = 'w-full px-[clamp(0.75rem,3.5vw,3rem)]'
 
 export function Dashboard() {
-  const { days, period } = useDashboardFilters()
+  const { days, period, country } = useDashboardFilters()
+  // Warm the deferred below-fold queries while the user reads the KPIs.
+  useDashboardPrefetch(days, country)
 
   return (
     <>
       <Header>
-        <Search className='me-auto' />
+        <div className='ms-auto' />
         <ThemeSwitch />
         <ProfileDropdown />
       </Header>
@@ -71,7 +74,7 @@ export function Dashboard() {
               title='Geography'
               description='Where leads come from'
             >
-              <Card>
+              <FilteredCard filterKeys={['days']}>
                 <DashboardCardHeader
                   title='Leads by country'
                   description={`Geographic distribution · last ${days} days`}
@@ -82,7 +85,7 @@ export function Dashboard() {
                     <LeadsByCountryMap />
                   </LazyMount>
                 </CardContent>
-              </Card>
+              </FilteredCard>
             </DashboardSection>
 
             <DashboardSection
@@ -92,7 +95,10 @@ export function Dashboard() {
               <ChartAreaInteractive />
 
               <div className='grid grid-cols-1 gap-4 xl:grid-cols-12'>
-                <Card className='xl:col-span-7'>
+                <FilteredCard
+                  filterKeys={['days', 'country']}
+                  className='xl:col-span-7'
+                >
                   <DashboardCardHeader
                     title='Pipeline by status'
                     description={`Lead funnel · last ${days} days`}
@@ -103,9 +109,12 @@ export function Dashboard() {
                       <StatusFunnelDonutChart />
                     </LazyMount>
                   </CardContent>
-                </Card>
+                </FilteredCard>
 
-                <Card className='xl:col-span-5'>
+                <FilteredCard
+                  filterKeys={['period', 'country']}
+                  className='xl:col-span-5'
+                >
                   <DashboardCardHeader
                     title='Leads by BDM'
                     description={period}
@@ -116,11 +125,14 @@ export function Dashboard() {
                       <BdmHorizontalBarChart period={period} />
                     </LazyMount>
                   </CardContent>
-                </Card>
+                </FilteredCard>
               </div>
 
               <div className='grid grid-cols-1 gap-4 xl:grid-cols-12'>
-                <Card className='xl:col-span-5'>
+                <FilteredCard
+                  filterKeys={['country']}
+                  className='xl:col-span-5'
+                >
                   <DashboardCardHeader
                     title='Hot leads'
                     description='Interested to open an account · act first'
@@ -131,9 +143,12 @@ export function Dashboard() {
                       <HotLeadsList />
                     </LazyMount>
                   </CardContent>
-                </Card>
+                </FilteredCard>
 
-                <Card className='xl:col-span-7'>
+                <FilteredCard
+                  filterKeys={['country']}
+                  className='xl:col-span-7'
+                >
                   <DashboardCardHeader
                     title='Unused demos by BDM'
                     description='Leads stuck at "Not Used Demo"'
@@ -144,7 +159,7 @@ export function Dashboard() {
                       <UnusedDemosByBdm limit={12} />
                     </LazyMount>
                   </CardContent>
-                </Card>
+                </FilteredCard>
               </div>
             </DashboardSection>
 
@@ -173,7 +188,9 @@ export function Dashboard() {
                     tooltip='All Account records grouped by Owner (BDM).'
                   />
                   <CardContent>
-                    <AccountsBdmDataTable />
+                    <LazyMount height={360}>
+                      <AccountsBdmDataTable />
+                    </LazyMount>
                   </CardContent>
                 </Card>
 

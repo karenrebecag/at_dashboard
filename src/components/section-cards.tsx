@@ -7,6 +7,7 @@ import {
   IconUsers,
 } from '@tabler/icons-react'
 import { InfoTooltip } from '@/components/info-tooltip'
+import { OdometerNumber } from '@/components/odometer-number'
 import { Badge } from '@/components/ui/badge'
 import {
   Card,
@@ -17,14 +18,21 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
-import { ACCOUNTS_BDM_FETCH_LIMIT } from '@/features/atfx/constants'
+import {
+  ACCOUNTS_BDM_FETCH_LIMIT,
+  HOT_LEADS_FETCH_LIMIT,
+} from '@/features/atfx/constants'
 import { MiniSparkline } from '@/features/atfx/charts/mini-sparkline'
 import { useDashboardFilters } from '@/features/atfx/dashboard-filters'
+import { WidgetFilterFooter } from '@/features/atfx/dashboard-filters/widget-filter-footer'
+import { useWidgetFilterState } from '@/features/atfx/dashboard-filters/widget-filter-state'
+import type { WidgetFilterKey } from '@/features/atfx/dashboard-filters/widget-filter-chips'
 import {
+  leadsByBdmFilteredParams,
   useAccountsByBdm,
+  useAtfxAggregate,
   useAtfxSearch,
   useDashboardBatchReady,
-  useLeadsByBdm,
   useLeadsTrend,
   useNewAccounts,
 } from '@/lib/atfx-api'
@@ -38,16 +46,27 @@ function sumCnt(records?: Array<Record<string, unknown>>): number {
 }
 
 export function SectionCards() {
-  const { days, period } = useDashboardFilters()
+  const { days, period, country } = useDashboardFilters()
   const batchReady = useDashboardBatchReady()
   const accounts = useAccountsByBdm(ACCOUNTS_BDM_FETCH_LIMIT, batchReady)
-  const leads = useLeadsByBdm(period, batchReady)
-  const prevLeads = useLeadsByBdm(getPreviousPeriod(period), batchReady)
-  const hot = useAtfxSearch(
-    { object: 'Lead', status: 'Interested to Open Account', limit: 100 },
+  const leads = useAtfxAggregate(
+    leadsByBdmFilteredParams(period, country),
     batchReady,
   )
-  const trend = useLeadsTrend(days, batchReady)
+  const prevLeads = useAtfxAggregate(
+    leadsByBdmFilteredParams(getPreviousPeriod(period), country),
+    batchReady,
+  )
+  const hot = useAtfxSearch(
+    {
+      object: 'Lead',
+      status: 'Interested to Open Account',
+      ...(country ? { country } : {}),
+      limit: HOT_LEADS_FETCH_LIMIT,
+    },
+    batchReady,
+  )
+  const trend = useLeadsTrend(days, country, batchReady)
   const newAccts = useNewAccounts(30, batchReady)
 
   const accountRows = accounts.data?.data?.records ?? []
@@ -66,11 +85,15 @@ export function SectionCards() {
   )
 
   return (
-    <div className='grid w-full grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4 *:data-[slot=card]:bg-gradient-to-t *:data-[slot=card]:from-muted/40 *:data-[slot=card]:to-card *:data-[slot=card]:shadow-xs'>
+    <div
+      data-odometer-group
+      className='grid w-full grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4 *:data-[slot=card]:bg-gradient-to-t *:data-[slot=card]:from-muted/40 *:data-[slot=card]:to-card *:data-[slot=card]:shadow-xs'
+    >
       <MetricCard
         label='Total accounts'
         value={formatters.unit(totalAccounts)}
         loading={accounts.isLoading}
+        odometerIndex={0}
         badge={
           newAccts.isLoading ? undefined : `+${formatters.unit(newAccounts)} · 30d`
         }
@@ -90,16 +113,20 @@ export function SectionCards() {
         footerHint='Source: Lead pipeline'
         tooltip='Leads with CreatedDate in the selected BDM period.'
         icon={<IconUsers className='size-4' />}
+        filterKeys={['period', 'days', 'country']}
+        odometerIndex={1}
       />
       <MetricCard
         label='Hot leads'
         value={formatters.unit(hotLeads)}
         loading={hot.isLoading}
+        odometerIndex={2}
         badge='Ready to open'
         footerTitle='Interested to open account'
         footerHint='Highest-intent leads — act first'
         tooltip='Leads at Status = "Interested to Open Account" — the most actionable segment in the pipeline.'
         icon={<IconFlame className='size-4' />}
+        filterKeys={['country']}
       />
       <MetricCard
         label={`Active BDMs · ${period}`}
@@ -111,6 +138,7 @@ export function SectionCards() {
         tooltip='Distinct BDMs (Owners) with at least one Account.'
         icon={<IconUserCheck className='size-4' />}
         progress={activeBdms > 0 ? activeBdms / ACCOUNTS_BDM_FETCH_LIMIT : 0}
+        odometerIndex={3}
       />
     </div>
   )
@@ -155,6 +183,8 @@ function MetricCard({
   footerHint,
   tooltip,
   icon,
+  filterKeys,
+  odometerIndex,
 }: {
   label: string
   value: string
@@ -168,16 +198,35 @@ function MetricCard({
   footerHint?: string
   tooltip: string
   icon: React.ReactNode
+  filterKeys?: WidgetFilterKey[]
+  odometerIndex?: number
 }) {
+  const { isActive } = useWidgetFilterState(filterKeys ?? [])
+
   return (
-    <Card className='@container/card'>
-      <CardHeader>
+    <Card
+      className={cn(
+        '@container/card',
+        isActive &&
+          'border-primary/55 ring-1 ring-primary/20 transition-[border-color,box-shadow]',
+      )}
+      data-filter-active={isActive || undefined}
+    >
+      <CardHeader className='gap-2'>
         <div className='flex items-center gap-1.5'>
           <CardDescription>{label}</CardDescription>
           <InfoTooltip content={tooltip} />
         </div>
         <CardTitle className='text-2xl font-semibold tabular-nums @[250px]/card:text-3xl'>
-          {loading ? <Skeleton className='h-8 w-24' /> : value}
+          {loading ? (
+            <Skeleton className='h-8 w-24' />
+          ) : (
+            <OdometerNumber
+              value={value}
+              staggerIndex={odometerIndex}
+              className='@[250px]/card:text-3xl text-2xl font-semibold'
+            />
+          )}
         </CardTitle>
         <CardAction className='flex flex-col items-end gap-1'>
           {delta !== undefined && deltaLabel ? (
@@ -207,6 +256,7 @@ function MetricCard({
         </div>
         {footerHint && <div className='text-muted-foreground'>{footerHint}</div>}
       </CardFooter>
+      {filterKeys?.length ? <WidgetFilterFooter keys={filterKeys} /> : null}
     </Card>
   )
 }

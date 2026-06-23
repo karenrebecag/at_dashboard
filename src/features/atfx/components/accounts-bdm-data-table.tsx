@@ -23,7 +23,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { ACCOUNTS_BDM_FETCH_LIMIT } from '@/features/atfx/constants'
-import { useAccountsByBdm } from '@/lib/atfx-api'
+import { useAccountsByBdm, useDashboardBatchReady } from '@/lib/atfx-api'
 import { formatters } from '@/lib/planner/formatters'
 
 type BdmAccountRow = {
@@ -34,7 +34,11 @@ type BdmAccountRow = {
 }
 
 export function AccountsBdmDataTable() {
-  const { data, isLoading, isError } = useAccountsByBdm(ACCOUNTS_BDM_FETCH_LIMIT)
+  const batchReady = useDashboardBatchReady()
+  const { data, isLoading, isError } = useAccountsByBdm(
+    ACCOUNTS_BDM_FETCH_LIMIT,
+    batchReady,
+  )
   const [sorting, setSorting] = useState<SortingState>([
     { id: 'accounts', desc: true },
   ])

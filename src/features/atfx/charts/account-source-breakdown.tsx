@@ -1,7 +1,11 @@
 import { useMemo } from 'react'
 import { ChartEmptyState } from '@/components/dashboard/chart-empty-state'
 import { ChartSkeleton } from '@/components/dashboard/chart-skeleton'
-import { useAtfxAggregate } from '@/lib/atfx-api'
+import {
+  acquisitionChannelParams,
+  useAtfxAggregate,
+  useDashboardBatchReady,
+} from '@/lib/atfx-api'
 import { formatters } from '@/lib/planner/formatters'
 
 // Acquisition channel mix (Client_Source__c). Brand-coherent palette:
@@ -15,11 +19,11 @@ const SOURCE_COLORS: Record<string, string> = {
 const FALLBACK_COLOR = 'var(--muted-foreground)'
 
 export function AccountSourceBreakdown() {
-  const { data, isLoading, isError } = useAtfxAggregate({
-    object: 'Account',
-    groupBy: ['Client_Source__c'],
-    orderBy: 'desc',
-  })
+  const batchReady = useDashboardBatchReady()
+  const { data, isLoading, isError } = useAtfxAggregate(
+    acquisitionChannelParams(),
+    batchReady,
+  )
 
   const rows = useMemo(() => {
     return (data?.data?.records ?? [])

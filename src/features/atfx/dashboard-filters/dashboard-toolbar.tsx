@@ -13,16 +13,10 @@ import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { useAtfxPicklists } from '@/lib/atfx-api'
 import { cn } from '@/lib/utils'
 import { useDashboardFilters } from './context'
+import { PERIOD_LABELS } from './filter-labels'
 import { DASHBOARD_DAY_OPTIONS, DASHBOARD_PERIODS } from './types'
 
 const ALL_COUNTRIES = '__all__'
-
-const PERIOD_LABELS: Record<string, string> = {
-  THIS_MONTH: 'This month',
-  LAST_MONTH: 'Last month',
-  THIS_QUARTER: 'Quarter',
-  'LAST_N_DAYS:30': '30d',
-}
 
 export function DashboardToolbar({ className }: { className?: string }) {
   const { days, period, country, setDays, setPeriod, setCountry } =

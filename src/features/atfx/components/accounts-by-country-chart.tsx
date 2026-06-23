@@ -1,9 +1,10 @@
 import { useMemo } from 'react'
 import { AccountsByCountryRadarChart } from '@/features/atfx/charts/accounts-by-country-radar-chart'
-import { useAccountsByCountry } from '@/lib/atfx-api'
+import { useAccountsByCountry, useDashboardBatchReady } from '@/lib/atfx-api'
 
 export function AccountsByCountryChart({ limit = 10 }: { limit?: number }) {
-  const { data, isLoading, isError } = useAccountsByCountry(limit)
+  const batchReady = useDashboardBatchReady()
+  const { data, isLoading, isError } = useAccountsByCountry(limit, batchReady)
 
   const chartData = useMemo(
     () =>

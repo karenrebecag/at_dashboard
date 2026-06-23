@@ -8,7 +8,7 @@ import {
   LEADS_COUNTRY_MAP_BUCKETS,
   leadsCountryMapClass,
 } from '@/features/atfx/charts/leads-country-map-scale'
-import { useLeadsByCountry } from '@/lib/atfx-api'
+import { useDashboardBatchReady, useLeadsByCountry } from '@/lib/atfx-api'
 import { formatters } from '@/lib/planner/formatters'
 import { cn } from '@/lib/utils'
 
@@ -21,7 +21,8 @@ function levelFor(count: number, max: number): number {
 
 export function LeadsByCountryMap() {
   const { days } = useDashboardFilters()
-  const { data, isLoading, isError } = useLeadsByCountry(days)
+  const batchReady = useDashboardBatchReady()
+  const { data, isLoading, isError } = useLeadsByCountry(days, batchReady)
 
   const regions = useMemo(() => {
     const records = data?.data?.records ?? []

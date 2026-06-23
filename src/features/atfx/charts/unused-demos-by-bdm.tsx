@@ -7,7 +7,12 @@ import {
   ChartTooltipContent,
   type ChartConfig,
 } from '@/components/ui/chart'
-import { useAtfxAggregate } from '@/lib/atfx-api'
+import { useDashboardFilters } from '@/features/atfx/dashboard-filters'
+import {
+  unusedDemosParams,
+  useAtfxAggregate,
+  useDashboardBatchReady,
+} from '@/lib/atfx-api'
 
 const chartConfig = {
   demos: { label: 'Unused demos', color: 'var(--chart-3)' },
@@ -22,13 +27,12 @@ export function UnusedDemosByBdm({
   limit?: number
   maxHeight?: number
 }) {
-  const { data, isLoading, isError } = useAtfxAggregate({
-    object: 'Lead',
-    groupBy: ['Owner.Name'],
-    filters: { status: 'Not Used Demo' },
-    orderBy: 'desc',
-    limit,
-  })
+  const { country } = useDashboardFilters()
+  const batchReady = useDashboardBatchReady()
+  const { data, isLoading, isError } = useAtfxAggregate(
+    unusedDemosParams(limit, country),
+    batchReady,
+  )
 
   if (isLoading) return <ChartSkeleton height={320} />
   if (isError) return <ChartEmptyState message='Could not load unused demos' />

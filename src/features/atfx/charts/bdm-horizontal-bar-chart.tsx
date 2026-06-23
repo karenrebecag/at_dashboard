@@ -7,7 +7,12 @@ import {
   ChartTooltipContent,
   type ChartConfig,
 } from '@/components/ui/chart'
-import { useLeadsByBdm } from '@/lib/atfx-api'
+import { useDashboardFilters } from '@/features/atfx/dashboard-filters'
+import {
+  leadsByBdmFilteredParams,
+  useAtfxAggregate,
+  useDashboardBatchReady,
+} from '@/lib/atfx-api'
 
 const chartConfig = {
   leads: { label: 'Leads', color: 'var(--chart-1)' },
@@ -22,7 +27,12 @@ export function BdmHorizontalBarChart({
   limit?: number
   maxHeight?: number
 }) {
-  const { data, isLoading, isError } = useLeadsByBdm(period)
+  const { country } = useDashboardFilters()
+  const batchReady = useDashboardBatchReady()
+  const { data, isLoading, isError } = useAtfxAggregate(
+    leadsByBdmFilteredParams(period, country),
+    batchReady,
+  )
 
   if (isLoading) return <ChartSkeleton height={320} />
   if (isError) return <ChartEmptyState message='Could not load BDM ranking' />

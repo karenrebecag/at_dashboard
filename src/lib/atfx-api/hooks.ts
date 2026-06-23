@@ -4,6 +4,7 @@ import {
   useMutation,
   useQuery,
   useQueryClient,
+  type QueryKey,
 } from '@tanstack/react-query'
 import { atfxApi, runWithBypassCache } from './client'
 import { atfxEnv } from './env'
@@ -145,11 +146,12 @@ export function useLeadsByBdm(period = 'THIS_MONTH', enabled = true) {
   })
 }
 
-export function useLeadsByCountry(days = 30) {
+export function useLeadsByCountry(days = 30, enabled = true) {
   return useQuery({
     queryKey: atfxKeys.leadsByCountry(days),
     queryFn: () => atfxApi.leadsByCountry(days),
     staleTime: DASHBOARD_STALE_MS,
+    enabled,
     ...dashboardQueryDefaults,
   })
 }
@@ -199,16 +201,17 @@ export function useAccountsByBdm(limit = 50, enabled = true) {
 
 // All-time leads per owner (BDM) — pairs with useAccountsByBdm to cross
 // the lead and account books in the BDM leaderboard.
+export const leadsByBdmAllTimeParams = (limit = 50): AggregateParams => ({
+  object: 'Lead',
+  groupBy: ['Owner.Name', 'OwnerId'],
+  orderBy: 'desc',
+  limit,
+})
+
 export function useLeadsByBdmAllTime(limit = 50, enabled = true) {
   return useQuery({
     queryKey: atfxKeys.leadsByBdmAllTime(limit),
-    queryFn: () =>
-      atfxApi.aggregate({
-        object: 'Lead',
-        groupBy: ['Owner.Name', 'OwnerId'],
-        orderBy: 'desc',
-        limit,
-      }),
+    queryFn: () => atfxApi.aggregate(leadsByBdmAllTimeParams(limit)),
     staleTime: DASHBOARD_STALE_MS,
     enabled,
     ...dashboardQueryDefaults,
@@ -234,29 +237,38 @@ export function useNewAccounts(days = 30, enabled = true) {
   })
 }
 
+export const accountsByCountryParams = (limit = 10): AggregateParams => ({
+  object: 'Account',
+  groupBy: ['Country_of_Residence_Account__c'],
+  orderBy: 'desc',
+  limit,
+})
+
 export function useAccountsByCountry(limit = 10, enabled = true) {
   return useQuery({
     queryKey: atfxKeys.accountsByCountry(limit),
-    queryFn: () =>
-      atfxApi.aggregate({
-        object: 'Account',
-        groupBy: ['Country_of_Residence_Account__c'],
-        orderBy: 'desc',
-        limit,
-      }),
+    queryFn: () => atfxApi.aggregate(accountsByCountryParams(limit)),
     staleTime: DASHBOARD_STALE_MS,
     enabled,
     ...dashboardQueryDefaults,
   })
 }
 
+// Country comes from a controlled ISO-3 picklist; validate before interpolating
+// into SOQL so a malformed value can never inject into the query string.
+function countrySoqlClause(country?: string): string {
+  if (!country || !/^[A-Z]{3}$/.test(country)) return ''
+  return ` AND Country_of_Residence_Lead__c = '${country}'`
+}
+
 // Daily granularity: lead history spans only a few weeks, so a monthly
 // grouping collapses to a single point. Day buckets show the real curve.
-function leadsTrendSoql(days: number): string {
+function leadsTrendSoql(days: number, country?: string): string {
   return (
     'SELECT DAY_ONLY(CreatedDate) d, COUNT(Id) cnt ' +
-    `FROM Lead WHERE CreatedDate = LAST_N_DAYS:${days} ` +
-    'GROUP BY DAY_ONLY(CreatedDate) ' +
+    `FROM Lead WHERE CreatedDate = LAST_N_DAYS:${days}` +
+    countrySoqlClause(country) +
+    ' GROUP BY DAY_ONLY(CreatedDate) ' +
     'ORDER BY DAY_ONLY(CreatedDate)'
   )
 }
@@ -270,10 +282,10 @@ function leadsTrendConvertedSoql(days: number): string {
   )
 }
 
-export function useLeadsTrend(days = 30, enabled = true) {
+export function useLeadsTrend(days = 30, country?: string, enabled = true) {
   return useQuery({
-    queryKey: atfxKeys.leadsTrend(days),
-    queryFn: () => atfxApi.query({ query: leadsTrendSoql(days) }),
+    queryKey: atfxKeys.leadsTrend(days, country),
+    queryFn: () => atfxApi.query({ query: leadsTrendSoql(days, country) }),
     staleTime: DASHBOARD_STALE_MS,
     enabled,
     ...dashboardQueryDefaults,
@@ -297,11 +309,90 @@ export function useInvalidateAtfx() {
 
 export function useRefetchAtfx() {
   const qc = useQueryClient()
+  // Manual Refresh is an explicit "get me the latest" action, so it forces
+  // every active query past the BFF edge cache — the dashboard must reflect
+  // the org now, not whatever the cache last stored. The MAX_CONCURRENT
+  // limiter already staggers the burst. (Stale-only refetch belongs to the
+  // automatic on-focus path, which goes through the warm cache without bypass.)
   return () =>
     runWithBypassCache(() =>
-      qc.refetchQueries({
-        queryKey: atfxKeys.all,
-        type: 'active',
-      }),
+      qc.refetchQueries({ queryKey: atfxKeys.all, type: 'active' }),
     )
+}
+
+// Param builders for the below-the-fold widgets that fetch via useAtfxAggregate
+// inline. Shared with useDashboardPrefetch so the prefetched cache entry uses
+// the exact same queryKey the widget reads — keep widget call-sites on these.
+export const statusFunnelParams = (
+  days: number,
+  country?: string,
+): AggregateParams => ({
+  object: 'Lead',
+  groupBy: ['Status'],
+  days,
+  ...(country ? { filters: { country } } : {}),
+  orderBy: 'desc',
+  limit: 50,
+})
+
+export const unusedDemosParams = (
+  limit = 12,
+  country?: string,
+): AggregateParams => ({
+  object: 'Lead',
+  groupBy: ['Owner.Name'],
+  filters: { status: 'Not Used Demo', ...(country ? { country } : {}) },
+  orderBy: 'desc',
+  limit,
+})
+
+// Leads per BDM for a period — country-aware via the generic aggregate endpoint
+// (the /dashboard/leads/by-bdm shortcut takes no country). Same SOQL otherwise.
+export const leadsByBdmFilteredParams = (
+  period: string,
+  country?: string,
+): AggregateParams => ({
+  object: 'Lead',
+  groupBy: ['Owner.Name'],
+  period,
+  ...(country ? { filters: { country } } : {}),
+  orderBy: 'desc',
+})
+
+export const acquisitionChannelParams = (): AggregateParams => ({
+  object: 'Account',
+  groupBy: ['Client_Source__c'],
+  orderBy: 'desc',
+})
+
+/**
+ * Warm the deferred below-the-fold dashboard queries in the background once the
+ * gate opens, so scrolling to a lazy widget hits a populated cache instead of
+ * starting a fresh roundtrip. Above-the-fold queries (KPIs, area chart) already
+ * fetch on mount and are skipped here. Keys mirror the widget hooks exactly, so
+ * the prefetched data is the same cache entry the widget reads.
+ */
+export function useDashboardPrefetch(days: number, country?: string) {
+  const qc = useQueryClient()
+  const batchReady = useDashboardBatchReady()
+
+  useEffect(() => {
+    if (!batchReady) return
+    const warm = (queryKey: QueryKey, queryFn: () => Promise<unknown>) =>
+      void qc.prefetchQuery({ queryKey, queryFn, staleTime: DASHBOARD_STALE_MS })
+
+    warm(atfxKeys.leadsByCountry(days), () => atfxApi.leadsByCountry(days))
+    warm(atfxKeys.accountsByCountry(10), () =>
+      atfxApi.aggregate(accountsByCountryParams(10)),
+    )
+    warm(atfxKeys.leadsByBdmAllTime(50), () =>
+      atfxApi.aggregate(leadsByBdmAllTimeParams(50)),
+    )
+    const funnel = statusFunnelParams(days, country)
+    warm(atfxKeys.aggregate(funnel), () => atfxApi.aggregate(funnel))
+    const demos = unusedDemosParams(12, country)
+    warm(atfxKeys.aggregate(demos), () => atfxApi.aggregate(demos))
+    const acquisition = acquisitionChannelParams()
+    warm(atfxKeys.aggregate(acquisition), () => atfxApi.aggregate(acquisition))
+  }, [qc, batchReady, days, country])
 }

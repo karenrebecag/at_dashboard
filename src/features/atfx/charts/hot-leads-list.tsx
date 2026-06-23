@@ -2,7 +2,9 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { ChartEmptyState } from '@/components/dashboard/chart-empty-state'
 import { ChartSkeleton } from '@/components/dashboard/chart-skeleton'
-import { useAtfxSearch } from '@/lib/atfx-api'
+import { HOT_LEADS_FETCH_LIMIT } from '@/features/atfx/constants'
+import { useDashboardFilters } from '@/features/atfx/dashboard-filters'
+import { useAtfxSearch, useDashboardBatchReady } from '@/lib/atfx-api'
 
 const HOT_STATUS = 'Interested to Open Account'
 
@@ -23,12 +25,18 @@ function shortDate(iso: string) {
   return mi >= 0 && mi < 12 ? `${months[mi]} ${Number(d)}, ${y}` : iso.slice(0, 10)
 }
 
-export function HotLeadsList({ limit = 50 }: { limit?: number }) {
-  const { data, isLoading, isError } = useAtfxSearch({
-    object: 'Lead',
-    status: HOT_STATUS,
-    limit,
-  })
+export function HotLeadsList({ limit = HOT_LEADS_FETCH_LIMIT }: { limit?: number }) {
+  const { country } = useDashboardFilters()
+  const batchReady = useDashboardBatchReady()
+  const { data, isLoading, isError } = useAtfxSearch(
+    {
+      object: 'Lead',
+      status: HOT_STATUS,
+      ...(country ? { country } : {}),
+      limit,
+    },
+    batchReady,
+  )
 
   if (isLoading) return <ChartSkeleton height={260} />
   if (isError) return <ChartEmptyState message='Could not load hot leads' />

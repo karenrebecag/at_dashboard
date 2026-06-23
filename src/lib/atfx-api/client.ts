@@ -62,14 +62,81 @@ export function atfxClient(): AxiosInstance {
   return client
 }
 
+// --- Request flow control -------------------------------------------------
+// Bounded concurrency (queue + chunking) so a full dashboard load doesn't fire
+// ~13 slow Salesforce queries at once, plus in-flight dedup (idempotency): the
+// API is read-only, so identical concurrent requests share a single response.
+const MAX_CONCURRENT = 4
+
+function createLimiter(max: number) {
+  let active = 0
+  const queue: Array<() => void> = []
+  const drain = () => {
+    while (active < max && queue.length > 0) {
+      active++
+      queue.shift()?.()
+    }
+  }
+  return function limit<T>(task: () => Promise<T>): Promise<T> {
+    return new Promise<T>((resolve, reject) => {
+      queue.push(() => {
+        task()
+          .then(resolve, reject)
+          .finally(() => {
+            active--
+            drain()
+          })
+      })
+      drain()
+    })
+  }
+}
+
+const limit = createLimiter(MAX_CONCURRENT)
+const inFlight = new Map<string, Promise<unknown>>()
+
+function stableKey(value: unknown): string {
+  if (value == null || typeof value !== 'object') {
+    return JSON.stringify(value ?? null)
+  }
+  if (Array.isArray(value)) return `[${value.map(stableKey).join(',')}]`
+  const obj = value as Record<string, unknown>
+  return `{${Object.keys(obj)
+    .sort()
+    .map((k) => `${k}:${stableKey(obj[k])}`)
+    .join(',')}}`
+}
+
+function enqueue<T>(key: string, task: () => Promise<T>): Promise<T> {
+  const existing = inFlight.get(key)
+  if (existing) return existing as Promise<T>
+  const p = limit(task).finally(() => inFlight.delete(key))
+  inFlight.set(key, p)
+  return p
+}
+
 async function get<T>(path: string, params?: object) {
-  const { data } = await atfxClient().get<AtfxApiEnvelope<T>>(path, { params })
-  return data
+  // Capture bypass per-call — the global flag may flip before a queued task runs
+  const bypass = bypassCache
+  const key = `GET ${path} ${stableKey(params)} ${bypass ? 'B' : ''}`
+  return enqueue(key, async () => {
+    const { data } = await atfxClient().get<AtfxApiEnvelope<T>>(path, {
+      params,
+      headers: bypass ? { 'X-ATFX-Bypass-Cache': '1' } : undefined,
+    })
+    return data
+  })
 }
 
 async function post<T>(path: string, body?: unknown) {
-  const { data } = await atfxClient().post<AtfxApiEnvelope<T>>(path, body)
-  return data
+  const bypass = bypassCache
+  const key = `POST ${path} ${stableKey(body)} ${bypass ? 'B' : ''}`
+  return enqueue(key, async () => {
+    const { data } = await atfxClient().post<AtfxApiEnvelope<T>>(path, body, {
+      headers: bypass ? { 'X-ATFX-Bypass-Cache': '1' } : undefined,
+    })
+    return data
+  })
 }
 
 export const atfxApi = {

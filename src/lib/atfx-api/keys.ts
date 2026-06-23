@@ -19,7 +19,8 @@ export const atfxKeys = {
   conversionRate: (days: number) => [...atfxKeys.all, 'leads', 'conversion', days] as const,
   leadsByStatus: (days: number, country?: string) =>
     [...atfxKeys.all, 'leads', 'by-status', days, country ?? ''] as const,
-  leadsTrend: (days: number) => [...atfxKeys.all, 'leads', 'trend', days] as const,
+  leadsTrend: (days: number, country?: string) =>
+    [...atfxKeys.all, 'leads', 'trend', days, country ?? ''] as const,
   leadsTrendConverted: (days: number) =>
     [...atfxKeys.all, 'leads', 'trend-converted', days] as const,
   accountsByBdm: (limit: number) => [...atfxKeys.all, 'accounts', 'by-bdm', limit] as const,

@@ -1,7 +1,11 @@
 import { useMemo } from 'react'
 import { ChartEmptyState } from '@/components/dashboard/chart-empty-state'
 import { ChartSkeleton } from '@/components/dashboard/chart-skeleton'
-import { useAccountsByBdm, useLeadsByBdmAllTime } from '@/lib/atfx-api'
+import {
+  useAccountsByBdm,
+  useDashboardBatchReady,
+  useLeadsByBdmAllTime,
+} from '@/lib/atfx-api'
 import { formatters } from '@/lib/planner/formatters'
 
 type LeaderRow = {
@@ -34,8 +38,9 @@ function toMap(records: Array<Record<string, unknown>> | undefined) {
 }
 
 export function BdmLeaderboard({ limit = 12 }: { limit?: number }) {
-  const accounts = useAccountsByBdm(50)
-  const leads = useLeadsByBdmAllTime(50)
+  const batchReady = useDashboardBatchReady()
+  const accounts = useAccountsByBdm(50, batchReady)
+  const leads = useLeadsByBdmAllTime(50, batchReady)
 
   const rows = useMemo<LeaderRow[]>(() => {
     const accRecords = accounts.data?.data?.records ?? []
