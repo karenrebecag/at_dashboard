@@ -21,6 +21,16 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
+  server: {
+    proxy: {
+      '/atfx-api': {
+        target: process.env.VITE_ATFX_API_URL ?? 'https://atfxmcp.westus2.cloudapp.azure.com',
+        changeOrigin: true,
+        rewrite: (p) => p.replace(/^\/atfx-api/, ''),
+        secure: true,
+      },
+    },
+  },
   test: {
     silent: 'passed-only',
     unstubEnvs: true,

@@ -21,6 +21,8 @@ import {
   AudioWaveform,
   Command,
   GalleryVerticalEnd,
+  LineChart,
+  Search,
 } from 'lucide-react'
 import { ClerkLogo } from '@/assets/clerk-logo'
 import { type SidebarData } from '../types'
@@ -33,9 +35,9 @@ export const sidebarData: SidebarData = {
   },
   teams: [
     {
-      name: 'Shadcn Admin',
+      name: 'ATFX',
       logo: Command,
-      plan: 'Vite + ShadcnUI',
+      plan: 'Salesforce CRM',
     },
     {
       name: 'Acme Inc',
@@ -56,6 +58,21 @@ export const sidebarData: SidebarData = {
           title: 'Dashboard',
           url: '/',
           icon: LayoutDashboard,
+        },
+        {
+          title: 'Leads',
+          url: '/leads',
+          icon: LineChart,
+        },
+        {
+          title: 'Search',
+          url: '/atfx/search',
+          icon: Search,
+        },
+        {
+          title: 'API explorer',
+          url: '/atfx/explore',
+          icon: Package,
         },
         {
           title: 'Tasks',
