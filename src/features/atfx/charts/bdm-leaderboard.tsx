@@ -7,6 +7,11 @@ import {
   useLeadsByBdmAllTime,
 } from '@/lib/atfx-api'
 import { formatters } from '@/lib/planner/formatters'
+import {
+  activationRate,
+  getIbActivation,
+  type RecognitionTier,
+} from './ib-activation-data'
 
 type LeaderRow = {
   name: string
@@ -85,6 +90,12 @@ export function BdmLeaderboard({ limit = 12 }: { limit?: number }) {
       <div className='flex items-center gap-4 text-xs text-muted-foreground'>
         <Legend color={ACCOUNTS_COLOR} label='Accounts' />
         <Legend color={LEADS_COLOR} label='Leads' />
+        <span className='inline-flex items-center gap-1.5'>
+          <span className='rounded-full bg-[var(--highlight)]/12 px-1.5 text-[0.625rem] font-medium text-[var(--highlight)]'>
+            %
+          </span>
+          IB activation rate
+        </span>
         <span className='ms-auto'>Ranked by total footprint</span>
       </div>
 
@@ -93,6 +104,8 @@ export function BdmLeaderboard({ limit = 12 }: { limit?: number }) {
           const width = (row.total / maxTotal) * 100
           const accPct = row.total > 0 ? (row.accounts / row.total) * 100 : 0
           const rank = rankDisplay(i)
+          const ib = getIbActivation(row.name)
+          const rate = ib ? activationRate(ib) : null
           return (
             <li key={row.name} className='flex items-center gap-3'>
               <span
@@ -129,9 +142,24 @@ export function BdmLeaderboard({ limit = 12 }: { limit?: number }) {
                       </span>
                     ) : null}
                   </div>
-                  <span className='shrink-0 text-xs text-muted-foreground tabular-nums'>
-                    {formatters.unit(row.accounts)} acc · {formatters.unit(row.leads)} leads
-                  </span>
+                  <div className='flex shrink-0 items-center gap-2'>
+                    {ib ? (
+                      <span
+                        className='inline-flex items-center gap-1.5'
+                        title={`${formatters.unit(ib.activeIbs)} active IBs / ${formatters.unit(ib.mibs)} MIBs`}
+                      >
+                        <span className='rounded-full bg-[var(--highlight)]/12 px-2 py-0.5 text-xs font-medium tabular-nums text-[var(--highlight)]'>
+                          {rate === null
+                            ? '—'
+                            : formatters.percentage({ number: rate })}
+                        </span>
+                        <RecognitionLabel tier={ib.recognition} />
+                      </span>
+                    ) : null}
+                    <span className='text-xs text-muted-foreground tabular-nums'>
+                      {formatters.unit(row.accounts)} acc · {formatters.unit(row.leads)} leads
+                    </span>
+                  </div>
                 </div>
 
                 <div
@@ -157,6 +185,13 @@ export function BdmLeaderboard({ limit = 12 }: { limit?: number }) {
         })}
       </ol>
     </div>
+  )
+}
+
+// Hidden on narrow rows to keep the activation rate pill aligned with the bar.
+function RecognitionLabel({ tier }: { tier: RecognitionTier }) {
+  return (
+    <span className='hidden text-xs text-muted-foreground sm:inline'>{tier}</span>
   )
 }
 

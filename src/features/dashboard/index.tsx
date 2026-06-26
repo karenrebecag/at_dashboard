@@ -20,10 +20,13 @@ import { RefreshButton } from '@/features/atfx/components/refresh-button'
 import { BdmHorizontalBarChart } from '@/features/atfx/charts/bdm-horizontal-bar-chart'
 import { AccountSourceBreakdown } from '@/features/atfx/charts/account-source-breakdown'
 import { BdmLeaderboard } from '@/features/atfx/charts/bdm-leaderboard'
+import { BdmMovementBoards } from '@/features/atfx/charts/bdm-movement'
+import { RecognitionDistribution } from '@/features/atfx/charts/recognition-distribution'
+import { RegionPerformance } from '@/features/atfx/charts/region-performance'
 import { HotLeadsList } from '@/features/atfx/charts/hot-leads-list'
 import { SchemaExplorer } from '@/features/atfx/charts/schema-explorer'
 import { StatusFunnelDonutChart } from '@/features/atfx/charts/status-funnel-donut-chart'
-import { UnusedDemosByBdm } from '@/features/atfx/charts/unused-demos-by-bdm'
+import { BdmMetricsTabs } from '@/features/atfx/charts/bdm-metrics-tabs'
 import {
   DashboardToolbar,
   useDashboardFilters,
@@ -150,13 +153,13 @@ export function Dashboard() {
                   className='xl:col-span-7'
                 >
                   <DashboardCardHeader
-                    title='Unused demos by BDM'
-                    description='Leads stuck at "Not Used Demo"'
-                    tooltip='Where the demo-to-account funnel leaks: leads that requested a demo but never used it, grouped by owning BDM.'
+                    title='BDM metrics'
+                    description='Unused demos, deposits, lots and IB activity by BDM'
+                    tooltip='Per-BDM breakdown. "Unused demos" is live from Salesforce (leads stuck at "Not Used Demo"); Net Deposit, Lots, MIBs and Active IBs come from the latest recognition report.'
                   />
                   <CardContent className='px-2 pb-4'>
                     <LazyMount height={360}>
-                      <UnusedDemosByBdm limit={12} />
+                      <BdmMetricsTabs />
                     </LazyMount>
                   </CardContent>
                 </FilteredCard>
@@ -179,6 +182,10 @@ export function Dashboard() {
                   </LazyMount>
                 </CardContent>
               </Card>
+
+              <LazyMount height={420}>
+                <BdmMovementBoards />
+              </LazyMount>
 
               <div className='grid grid-cols-1 gap-4 xl:grid-cols-12'>
                 <Card className='xl:col-span-7'>
@@ -208,18 +215,37 @@ export function Dashboard() {
                 </Card>
               </div>
 
-              <Card>
-                <DashboardCardHeader
-                  title='Acquisition channel'
-                  description='How the account book was sourced'
-                  tooltip='Account book by Client Source — direct sign-ups vs accounts brought in through Introducing Brokers (IB).'
-                />
-                <CardContent className='pb-5'>
-                  <LazyMount height={140}>
-                    <AccountSourceBreakdown />
-                  </LazyMount>
-                </CardContent>
-              </Card>
+              <div className='grid grid-cols-1 gap-4 xl:grid-cols-3'>
+                <Card>
+                  <DashboardCardHeader
+                    title='Acquisition channel'
+                    description='How the account book was sourced'
+                    tooltip='Account book by Client Source — direct sign-ups vs accounts brought in through Introducing Brokers (IB).'
+                  />
+                  <CardContent className='pb-5'>
+                    <LazyMount height={140}>
+                      <AccountSourceBreakdown />
+                    </LazyMount>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <DashboardCardHeader
+                    title='Recognition distribution'
+                    description='Recognition mix across BDMs'
+                    tooltip='Share of BDMs in each recognition tier across the full population.'
+                  />
+                  <CardContent className='pb-4'>
+                    <LazyMount height={300}>
+                      <RecognitionDistribution />
+                    </LazyMount>
+                  </CardContent>
+                </Card>
+
+                <LazyMount height={360}>
+                  <RegionPerformance />
+                </LazyMount>
+              </div>
             </DashboardSection>
 
             <DashboardSection
